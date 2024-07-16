@@ -62,7 +62,7 @@ The numerical prefixes to each script denote the order in which they should be e
 Files in this section essentially read in all raw data we use in various portions of the paper. These data are almost always drawn directly from the “_Data_postAER/raw” directory.
 
 
-`0_county_level_deepsolar.do`: This folder reads in the deepsolar dataset from Yu et al (2018) and aggregates the census-tract level data up to the county level resolution we use in later analysis and saves them into our data directory.
+`0_county_level_deepsolar.do`: This folder reads in the _DeepSolar_ dataset from Yu et al. (2018) and aggregates the census-tract level data up to the county level resolution we use in later analysis and saves them into our data directory.
 
 `0_deep_solar_regressions.do`: Performs regressions as-specified in section 2.2 of the draft. This reads in the deepsolar dataset and runs these regressions with no extra analysis — we take the dataset as given.
 
@@ -70,11 +70,11 @@ Files in this section essentially read in all raw data we use in various portion
 
 `0_hudcrosswalk.do`: Creates our crosswalk between zip codes and counties. This is needed to map system-level installations into counties (our unit of analysis) in the main text. The procedure to deal with zip codes that overlay multiple counties is described in detail in the script.
 
-`0_read_ACS_income.do`: read in county-level average household income levels for the years 2010-2018 from underlying data tables from the ACS.
+`0_read_ACS_income.do`: Reads in county-level average household income levels for the years 2010-2018 from underlying data tables from the ACS.
 
-`0_read_BB_2022_damages.do`: reads in Borenstein and Bushnell (2022) estimates for the marginal external costs and marginal carbon emissions that result from marginal electricity demand changes at the county level
+`0_read_BB_2022_damages.do`: Reads in Borenstein and Bushnell (2022) estimates for the marginal external costs and marginal carbon emissions that result from marginal electricity demand changes at the county level
 
-`0_state_lat_lon_pairs.do`: creates population-weighted state-level latitude-longitude centroids from census-tract level data.
+`0_state_lat_lon_pairs.do`: Creates population-weighted state-level latitude-longitude centroids from census-tract level data.
 
 ## Section 1  
 
@@ -115,16 +115,16 @@ Files in this section essentially read in all raw data we use in various portion
 
 ## Section APP 
 
-APP_1_PPW_Decomp_2023.do: This script carries out the price variance decomposition exercises we perform in Appendix C.
+`APP_1_PPW_Decomp_2023.do`: This script carries out the price variance decomposition exercises we perform in Appendix C.
 
 
 # Data Description for the Data Repo
 
-There are four folders: raw, processed,.sters, and temp.
+There are four folders: raw, processed,.sters, and temp. Contents are pretty much self explanatory and 
 
 ## Raw
 
-Contains all raw data files used in our analysis. This includes the LBNL tracking the sun data on individual solar PV systems, the deepsolar dataset, EIA data on residential electricity prices and consumption, ACS data on county-level income, NOAA data on state-level heating and cooling degree days, 
+Contains all raw data files used in our analysis. This includes the LBNL _Tracking the Sun_ data on individual solar PV systems (Barbose et al. 2019), the _DeepSolar_ dataset (Yu et al. 2018), EIA data on residential electricity prices and consumption from Form EIA - 861, ACS data on county-level average incomes, NOAA data on state-level heating and cooling degree days, EIA data on monthly natural gas consumption, and zip-code to county crosswalks from the U.S. Department of Housing and Urban Development.
 
 ## Processed
 
