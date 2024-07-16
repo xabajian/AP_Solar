@@ -2,7 +2,7 @@
 
 Read me file accompanying the scripts required to replicate findings in the main text and appendix “Subsidies for Close Substitutes: Aggregate Demand for Residential Solar Electricity”
 
-Replication files for the peer review responses are available from xander.abajian@gmail.com on request.
+Questions concerning running the code here or with replicating analysis performed in the peer review process should be directed to xander.abajian@gmail.com.
 
 ## Setup
 
