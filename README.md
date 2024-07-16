@@ -1,0 +1,137 @@
+# Abajian and Pretnar (AP 2024)
+
+Read me file accompanying the scripts required to replicate findings in the main text and appendix “Subsidies for Close Substitutes: Aggregate Demand for Residential Solar Electricity”
+
+Replication files for the peer review responses are available from xander.abajian@gmail.com on request.
+
+## Setup
+
+Scripts in this repository are written in a combination of Stata and R. Throughout this document, it is assumed that the replicator operates from a working directory containing all the necessary files and folders detailed in the structure below. Most importantly, a replicator must download the associated data repository from Zenodo at [https://doi.org/10.5281/zenodo.10476310](https://doi.org/10.5281/zenodo.10476310). To run the Stata scripts, this folder should be set as the root directory and the global macro $root should correspond to the folder containing all files in "ACDM_Data". (IE,  global root "{~/ACDM_Data}" needs to be run).
+
+## Requirements
+
+
+All programs run in the following versions of these applications:
+
+* Stata: Stata/SE 18.0 for Mac (Apple Silicon)
+* R: RStudio 2022.12.0+353 
+* Python: Python 3.11.1 64bit for Mac
+
+
+To run the Stata scripts, one must set their root directory to be the folder containing _Data_postAER. All other macros should then be internally consistent.
+
+To run the python and R scripts, more directory manipulation may be needed depending on how a replicator has configured their environment.
+
+
+
+# File Tree 
+
+```bash
+└── scripts
+ 
+├── 0_county_level_deepsolar.do
+├── 0_deep_solar_regressions.do
+├── 0_hudcrosswalk.do
+├── 0_read_861_electricity.do
+├── 0_read_ACS_income.do
+├── 0_read_BB_2022_damages.do
+├── 0_state_lat_lon_pairs.do
+├── 1_Read_TTS.do
+├── 1_solar API calls_2023.py
+├── 2_GMM_estimation.do
+├── 3_LCOE_Calculations.do
+├── 3_external_validation_2023.do
+├── 4_Counterfactuals.do
+├── 5_EIA_Gas.do
+├── 5_EIA_residentialsolar_monthly.do
+├── 5_hdd_cdd.do
+├── APP_1_PPW_Decomp_2023.do
+└── R_maps_2023.R
+
+
+```
+
+
+# Description of Scripts to Replicate our Analysis
+
+
+To run the Stata scripts that are not related to processing the proprietary IEA data, one must set their root directory to be the folder containing our Zenodo repository for the paper. All other macros should then be internally consistent.
+
+Stata scripts related to processing the IEA data are present and may be reviewed, but will ultimately not run without access to the IEA’s world energy balances and emissions databases.
+
+To run the R scripts, more directory manipulation may be needed depending on how a replicator has configured their environment.  In principle both should also run out of a correct configuration which sets the Zenodo folder as a root directory.
+
+The replication scripts are separated into two folders (as suggested above): IEA Data Processing and CAF Scripts Final. They (respectively) contain the scripts which process data from the IEA to form emissions factors (section 5.2 equation 5) and run our analysis of how energy demand feeds back into climate change. 
+
+The Stata scripts all contain numerical prefixes. These prefixes roughly denote the section of the analysis they are associated with. Note that not all files in our GitHub repository are used in generating the analysis for the main text — those that are marked “used” are used in the manuscript. Others are used to create portions of the supplementary information file or were used in the peer-review process
+
+# 
+The replication files contain two folders “_Scripts_postAER” and “_Data_postAER” — one contains the scripts and the other the raw data files. The numerical prefixes to each script denote the order in which they should be executed to replicate findings in our paper. The order within sections should be executed as written below.
+
+
+
+Section 0 — 
+!@#$!@#$#!@#$!@#$#
+Files in this section essentially read in all raw data we use in various portions of the paper. These data are almost always drawn directly from the “_Data_postAER/raw” directory.
+
+
+0_county_level_deepsolar.do: This folder reads in the deepsolar dataset from Yu et al (2018) and aggregates the census-tract level data up to the county level resolution we use in later analysis and saves them into our data directory.
+
+0_deep_solar_regressions.do: Performs regressions as-specified in section 2.2 of the draft. This reads in the deepsolar dataset and runs these regressions with no extra analysis — we take the dataset as given.
+
+0_read_861_electricity: Reads in utility-by-county specific average residential electricity prices and consumption at the annual level. These data are drawn directly from the EIA’s form 861 files available from the EIA website. It reads each individual excel file, maps each year into county-level data using the crosswalk EIA provides for 2018, and then saves them into a panel.
+
+0_hudcrosswalk.do: Creates our crosswalk between zip codes and counties. This is needed to map system-level installations into counties (our unit of analysis) in the main text. The procedure to deal with zip codes that overlay multiple counties is described in detail in the script.
+
+0_read_ACS_income.do: read in county-level average household income levels for the years 2010-2018 from underlying data tables from the ACS.
+
+0_read_BB_2022_damages.do: reads in Borenstein and Bushnell (2022) estimates for the marginal external costs and marginal carbon emissions that result from marginal electricity demand changes at the county level
+
+0_state_lat_lon_pairs.do: creates population-weighted state-level latitude-longitude centroids from census-tract level data.
+
+Section 1 — 
+!@#$!@#$#!@#$!@#$#
+
+1_Read_TTS.do: This script processes the raw tracking the sun dataset taken from the national renewable energy laboratory’s tracking the sun project (Barbose 2019). Included in this script is all data cleaning procedures described in more detail in the main text and appendix. This script produces the panel dataset of solar prices and quantities at the county level we use for estimation as well as tracking prices over time in figure 3. This includes calculating the levelized cost of energy for the counties in each time period we observe. It then combines these data with our panel of electricity prices and saves them into our data directory for estimating in section 2.
+
+1_solar API calls_2023.py: This script calls LBNL’s PVWatts API to estimate average system level PV generation in each of the approximately 820 counties for which we observe solar generation (note this is not the same as counties we use for estimation in which we construct both quantities and prices). This script will not run without an API key for the PVWatts API — one should be able to request a new one from LBNL as it is a public interface.
+
+
+Section 2 — 
+!@#$!@#$#!@#$!@#$#
+
+2_GMM_estimation.do: Performs the estimation procedure described in section 4 of the main text. This includes constructing the relevant time series for both instruments (solar module import prices and Henry hub natural gas contracts) as well as interacting them with county-level longitudes. The script then estimates the model using Stata’s GMM routine and then repeats this for bootstrapping the standard errors.s
+
+Section 3 — 
+!@#$!@#$#!@#$!@#$#
+
+3_LCOE_Calculations.do: Assigns estimated LCOEs over time in counties not included in our estimating sample. This produces the full cross-section of solar prices for the some 3000 counties in the lower-48 states we use in our simulation exercises and saves them into our data directory.
+
+3_external_validation_2023.do: This script performs the external validation procedure we describe in appendix B.3.3. 
+
+Section 4 — 
+!@#$!@#$#!@#$!@#$#
+
+4_Counterfactuals.do: This script performs all of the counterfactual analysis that underpins section 5 of our paper. It reads in our estimated structural parameters as well as the extrapolated values and solves for the equilibrium demand functions for each form of electricity under the pricing schemes we consider. It also takes in electricity prices and income levels for 2018 taken from files generated in section 0 of the scripts.
+
+
+Section 5 — 
+!@#$!@#$#!@#$!@#$#
+
+5_EIA_Gas.do: reads in monthly residential natural gas consumption per customer. Used in alternative specifications for the reduced-form regression in equation (15) in section 5.2 of the paper
+
+5_hdd_cdd: reads in monthly population weighted state-level heating and cooling degree days data from NOAA. This script reads the data directly from NOAA’s web directories.
+
+5_EIA_residentialsolar_monthly: Reads in monthly residential electricity consumption as well as small-scale solar PV generation from EIA data files located in our data folder. Combines these panel data with CDD/HDD data generated by 5_hdd_cdd.do. Performs variations of the regression in equation (15) on these data.
+
+
+Section APP — 
+!@#$!@#$#!@#$!@#$#
+
+APP_1_PPW_Decomp_2023.do: This script carries out the price variance decomposition exercises we perform in Appendix C.
+
+R_maps_2023: Creates all figures in the paper. Takes arguments of .csv outputs from the “_Data_postAER” folder.
+
+
+# Data Description for the Data Repo
+
