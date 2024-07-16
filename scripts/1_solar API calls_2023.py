@@ -76,16 +76,14 @@ for i in range(0,820,1):
     #generate string parts
 
     #note this includes xander abajian's API key
-    part1 = "https://developer.nrel.gov/api/pvwatts/v6.json?api_key=vlCEzpXzo9kRkBxcMeufZ4np1S6DRbG25KygSq0W&lat="
+    part1 = "https://developer.nrel.gov/api/pvwatts/v6.json?api_key=$$YOUR API KEY HERE$$$$&lat="
     part2 = "&lon="
     #part 3 for mid-efficiency
     part3 = "&system_capacity=1&azimuth=180&tilt=40&array_type=1&module_type=1&losses=14.08"
     #part 3 for high-efficiency
         #part3 = "&system_capacity=1&azimuth=180&tilt=40&array_type=1&module_type=2&losses=14.08"
 
-        ####api key!!!!!
-        ####vlCEzpXzo9kRkBxcMeufZ4np1S6DRbG25KygSq0W
-
+ 
     #create api call to loop over
     dummy_api_call = part1 + i_lat + part2 + i_lon + part3
 
