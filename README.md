@@ -28,24 +28,24 @@ To run the python and R scripts, more directory manipulation may be needed depen
 
 ```bash
 └── scripts
-├── 0_county_level_deepsolar.do
-├── 0_deep_solar_regressions.do
-├── 0_hudcrosswalk.do
-├── 0_read_861_electricity.do
-├── 0_read_ACS_income.do
-├── 0_read_BB_2022_damages.do
-├── 0_state_lat_lon_pairs.do
-├── 1_Read_TTS.do
-├── 1_solar API calls_2023.py
-├── 2_GMM_estimation.do
-├── 3_LCOE_Calculations.do
-├── 3_external_validation_2023.do
-├── 4_Counterfactuals.do
-├── 5_EIA_Gas.do
-├── 5_EIA_residentialsolar_monthly.do
-├── 5_hdd_cdd.do
-├── APP_1_PPW_Decomp_2023.do
-└── R_maps_2023.R
+  ├── 0_county_level_deepsolar.do
+  ├── 0_deep_solar_regressions.do
+  ├── 0_hudcrosswalk.do
+  ├── 0_read_861_electricity.do
+  ├── 0_read_ACS_income.do
+  ├── 0_read_BB_2022_damages.do
+  ├── 0_state_lat_lon_pairs.do
+  ├── 1_Read_TTS.do
+  ├── 1_solar API calls_2023.py
+  ├── 2_GMM_estimation.do
+  ├── 3_LCOE_Calculations.do
+  ├── 3_external_validation_2023.do
+  ├── 4_Counterfactuals.do
+  ├── 5_EIA_Gas.do
+  ├── 5_EIA_residentialsolar_monthly.do
+  ├── 5_hdd_cdd.do
+  ├── APP_1_PPW_Decomp_2023.do
+  └── R_maps_2023.R
 
 
 ```
