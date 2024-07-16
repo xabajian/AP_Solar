@@ -6,7 +6,7 @@ Replication files for the peer review responses are available from xander.abajia
 
 ## Setup
 
-Scripts in this repository are written in a combination of Stata and R. Throughout this document, it is assumed that the replicator operates from a working directory containing all the necessary files and folders detailed in the structure below. Most importantly, a replicator must download the associated data repository from Zenodo at [https://doi.org/10.5281/zenodo.10476310](https://doi.org/10.5281/zenodo.10476310). To run the Stata scripts, this folder should be set as the root directory and the global macro $root should correspond to the folder containing all files in "ACDM_Data". (IE,  global root "{~/ACDM_Data}" needs to be run).
+Scripts in this repository are written in a combination of Stata, R, and Python. Throughout this document, it is assumed that the replicator operates from a working directory containing all the necessary files and folders detailed in the structure below. Most importantly, a replicator must download the associated data repository from Zenodo at [https://doi.org/10.5281/zenodo.12749922](https://doi.org/10.5281/zenodo.12749922). To run the Stata scripts, this folder should be set as the root directory and the global macro $root should correspond to the folder containing all files in "_Data_postAER". (IE,  global root "{~/_Data_postAER}" needs to be run).
 
 ## Requirements
 
@@ -28,7 +28,6 @@ To run the python and R scripts, more directory manipulation may be needed depen
 
 ```bash
 └── scripts
- 
 ├── 0_county_level_deepsolar.do
 ├── 0_deep_solar_regressions.do
 ├── 0_hudcrosswalk.do
@@ -55,23 +54,12 @@ To run the python and R scripts, more directory manipulation may be needed depen
 # Description of Scripts to Replicate our Analysis
 
 
-To run the Stata scripts that are not related to processing the proprietary IEA data, one must set their root directory to be the folder containing our Zenodo repository for the paper. All other macros should then be internally consistent.
-
-Stata scripts related to processing the IEA data are present and may be reviewed, but will ultimately not run without access to the IEA’s world energy balances and emissions databases.
-
-To run the R scripts, more directory manipulation may be needed depending on how a replicator has configured their environment.  In principle both should also run out of a correct configuration which sets the Zenodo folder as a root directory.
-
-The replication scripts are separated into two folders (as suggested above): IEA Data Processing and CAF Scripts Final. They (respectively) contain the scripts which process data from the IEA to form emissions factors (section 5.2 equation 5) and run our analysis of how energy demand feeds back into climate change. 
-
-The Stata scripts all contain numerical prefixes. These prefixes roughly denote the section of the analysis they are associated with. Note that not all files in our GitHub repository are used in generating the analysis for the main text — those that are marked “used” are used in the manuscript. Others are used to create portions of the supplementary information file or were used in the peer-review process
-
-# 
-The replication files contain two folders “_Scripts_postAER” and “_Data_postAER” — one contains the scripts and the other the raw data files. The numerical prefixes to each script denote the order in which they should be executed to replicate findings in our paper. The order within sections should be executed as written below.
+The numerical prefixes to each script denote the order in which they should be executed to replicate findings in our paper. The order within sections should be executed as written below.
 
 
 
-Section 0 — 
-!@#$!@#$#!@#$!@#$#
+## Section 0 — 
+
 Files in this section essentially read in all raw data we use in various portions of the paper. These data are almost always drawn directly from the “_Data_postAER/raw” directory.
 
 
