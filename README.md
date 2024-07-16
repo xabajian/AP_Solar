@@ -95,7 +95,7 @@ Files in this section essentially read in all raw data we use in various portion
 
 ## Section 4 
 
-4_Counterfactuals.do: This script performs all of the counterfactual analysis that underpins section 5 of our paper. It reads in our estimated structural parameters as well as the extrapolated values and solves for the equilibrium demand functions for each form of electricity under the pricing schemes we consider. It also takes in electricity prices and income levels for 2018 taken from files generated in section 0 of the scripts.
+`4_Counterfactuals.do`: This script performs all of the counterfactual analysis that underpins section 5 of our paper. It reads in our estimated structural parameters as well as the extrapolated values and solves for the equilibrium demand functions for each form of electricity under the pricing schemes we consider. It also takes in electricity prices and income levels for 2018 taken from files generated in section 0 of the scripts.
 
 
 ## Section 5 
@@ -109,7 +109,7 @@ Files in this section essentially read in all raw data we use in various portion
 
 ## Misc
 
-`R_maps_2023`: Creates all figures in the paper. Takes arguments of .csv outputs from the “_Data_postAER” folder.
+`R_maps_2023.R`: Creates all maps in the paper. Takes arguments of .csv outputs from the “_Data_postAER” folder.
 
 
 
