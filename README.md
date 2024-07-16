@@ -1,4 +1,4 @@
-# Abajian and Pretnar (AP 2024)
+# Abajian and Pretnar 2024
 
 Read me file accompanying the scripts required to replicate findings in the main text and appendix “Subsidies for Close Substitutes: Aggregate Demand for Residential Solar Electricity”
 
@@ -57,69 +57,84 @@ To run the python and R scripts, more directory manipulation may be needed depen
 The numerical prefixes to each script denote the order in which they should be executed to replicate findings in our paper. The order within sections should be executed as written below.
 
 
-
-## Section 0 — 
+## Section 0 
 
 Files in this section essentially read in all raw data we use in various portions of the paper. These data are almost always drawn directly from the “_Data_postAER/raw” directory.
 
 
-0_county_level_deepsolar.do: This folder reads in the deepsolar dataset from Yu et al (2018) and aggregates the census-tract level data up to the county level resolution we use in later analysis and saves them into our data directory.
+`0_county_level_deepsolar.do`: This folder reads in the deepsolar dataset from Yu et al (2018) and aggregates the census-tract level data up to the county level resolution we use in later analysis and saves them into our data directory.
 
-0_deep_solar_regressions.do: Performs regressions as-specified in section 2.2 of the draft. This reads in the deepsolar dataset and runs these regressions with no extra analysis — we take the dataset as given.
+`0_deep_solar_regressions.do`: Performs regressions as-specified in section 2.2 of the draft. This reads in the deepsolar dataset and runs these regressions with no extra analysis — we take the dataset as given.
 
-0_read_861_electricity: Reads in utility-by-county specific average residential electricity prices and consumption at the annual level. These data are drawn directly from the EIA’s form 861 files available from the EIA website. It reads each individual excel file, maps each year into county-level data using the crosswalk EIA provides for 2018, and then saves them into a panel.
+`0_read_861_electricity`: Reads in utility-by-county specific average residential electricity prices and consumption at the annual level. These data are drawn directly from the EIA’s form 861 files available from the EIA website. It reads each individual excel file, maps each year into county-level data using the crosswalk EIA provides for 2018, and then saves them into a panel.
 
-0_hudcrosswalk.do: Creates our crosswalk between zip codes and counties. This is needed to map system-level installations into counties (our unit of analysis) in the main text. The procedure to deal with zip codes that overlay multiple counties is described in detail in the script.
+`0_hudcrosswalk.do`: Creates our crosswalk between zip codes and counties. This is needed to map system-level installations into counties (our unit of analysis) in the main text. The procedure to deal with zip codes that overlay multiple counties is described in detail in the script.
 
-0_read_ACS_income.do: read in county-level average household income levels for the years 2010-2018 from underlying data tables from the ACS.
+`0_read_ACS_income.do`: read in county-level average household income levels for the years 2010-2018 from underlying data tables from the ACS.
 
-0_read_BB_2022_damages.do: reads in Borenstein and Bushnell (2022) estimates for the marginal external costs and marginal carbon emissions that result from marginal electricity demand changes at the county level
+`0_read_BB_2022_damages.do`: reads in Borenstein and Bushnell (2022) estimates for the marginal external costs and marginal carbon emissions that result from marginal electricity demand changes at the county level
 
-0_state_lat_lon_pairs.do: creates population-weighted state-level latitude-longitude centroids from census-tract level data.
+`0_state_lat_lon_pairs.do`: creates population-weighted state-level latitude-longitude centroids from census-tract level data.
 
-Section 1 — 
-!@#$!@#$#!@#$!@#$#
+## Section 1  
 
-1_Read_TTS.do: This script processes the raw tracking the sun dataset taken from the national renewable energy laboratory’s tracking the sun project (Barbose 2019). Included in this script is all data cleaning procedures described in more detail in the main text and appendix. This script produces the panel dataset of solar prices and quantities at the county level we use for estimation as well as tracking prices over time in figure 3. This includes calculating the levelized cost of energy for the counties in each time period we observe. It then combines these data with our panel of electricity prices and saves them into our data directory for estimating in section 2.
+`1_Read_TTS.do`: This script processes the raw tracking the sun dataset taken from the national renewable energy laboratory’s tracking the sun project (Barbose 2019). Included in this script is all data cleaning procedures described in more detail in the main text and appendix. This script produces the panel dataset of solar prices and quantities at the county level we use for estimation as well as tracking prices over time in figure 3. This includes calculating the levelized cost of energy for the counties in each time period we observe. It then combines these data with our panel of electricity prices and saves them into our data directory for estimating in section 2.
 
-1_solar API calls_2023.py: This script calls LBNL’s PVWatts API to estimate average system level PV generation in each of the approximately 820 counties for which we observe solar generation (note this is not the same as counties we use for estimation in which we construct both quantities and prices). This script will not run without an API key for the PVWatts API — one should be able to request a new one from LBNL as it is a public interface.
+`1_solar API calls_2023.py`: This script calls LBNL’s PVWatts API to estimate average system level PV generation in each of the approximately 820 counties for which we observe solar generation (note this is not the same as counties we use for estimation in which we construct both quantities and prices). This script will not run without an API key for the PVWatts API — one should be able to request a new one from LBNL as it is a public interface.
 
 
-Section 2 — 
-!@#$!@#$#!@#$!@#$#
+## Section 2 
 
-2_GMM_estimation.do: Performs the estimation procedure described in section 4 of the main text. This includes constructing the relevant time series for both instruments (solar module import prices and Henry hub natural gas contracts) as well as interacting them with county-level longitudes. The script then estimates the model using Stata’s GMM routine and then repeats this for bootstrapping the standard errors.s
+`2_GMM_estimation.do`: Performs the estimation procedure described in section 4 of the main text. This includes constructing the relevant time series for both instruments (solar module import prices and Henry hub natural gas contracts) as well as interacting them with county-level longitudes. The script then estimates the model using Stata’s GMM routine and then repeats this for bootstrapping the standard errors.s
 
-Section 3 — 
-!@#$!@#$#!@#$!@#$#
+## Section 3 
 
-3_LCOE_Calculations.do: Assigns estimated LCOEs over time in counties not included in our estimating sample. This produces the full cross-section of solar prices for the some 3000 counties in the lower-48 states we use in our simulation exercises and saves them into our data directory.
+`3_LCOE_Calculations.do`: Assigns estimated LCOEs over time in counties not included in our estimating sample. This produces the full cross-section of solar prices for the some 3000 counties in the lower-48 states we use in our simulation exercises and saves them into our data directory.
 
-3_external_validation_2023.do: This script performs the external validation procedure we describe in appendix B.3.3. 
+`3_external_validation_2023.do`: This script performs the external validation procedure we describe in appendix B.3.3. 
 
-Section 4 — 
-!@#$!@#$#!@#$!@#$#
+## Section 4 
 
 4_Counterfactuals.do: This script performs all of the counterfactual analysis that underpins section 5 of our paper. It reads in our estimated structural parameters as well as the extrapolated values and solves for the equilibrium demand functions for each form of electricity under the pricing schemes we consider. It also takes in electricity prices and income levels for 2018 taken from files generated in section 0 of the scripts.
 
 
-Section 5 — 
-!@#$!@#$#!@#$!@#$#
-
-5_EIA_Gas.do: reads in monthly residential natural gas consumption per customer. Used in alternative specifications for the reduced-form regression in equation (15) in section 5.2 of the paper
-
-5_hdd_cdd: reads in monthly population weighted state-level heating and cooling degree days data from NOAA. This script reads the data directly from NOAA’s web directories.
-
-5_EIA_residentialsolar_monthly: Reads in monthly residential electricity consumption as well as small-scale solar PV generation from EIA data files located in our data folder. Combines these panel data with CDD/HDD data generated by 5_hdd_cdd.do. Performs variations of the regression in equation (15) on these data.
+## Section 5 
 
 
-Section APP — 
-!@#$!@#$#!@#$!@#$#
+`5_EIA_Gas.do`: reads in monthly residential natural gas consumption per customer. Used in alternative specifications for the reduced-form regression in equation (15) in section 5.2 of the paper
+
+`5_hdd_cdd.do`: reads in monthly population weighted state-level heating and cooling degree days data from NOAA. This script reads the data directly from NOAA’s web directories.
+
+`5_EIA_residentialsolar_monthly.do` : Reads in monthly residential electricity consumption as well as small-scale solar PV generation from EIA data files located in our data folder. Combines these panel data with CDD/HDD data generated by 5_hdd_cdd.do. Performs variations of the regression in equation (15) on these data.
+
+## Misc
+
+`R_maps_2023`: Creates all figures in the paper. Takes arguments of .csv outputs from the “_Data_postAER” folder.
+
+
+
+## Section APP 
 
 APP_1_PPW_Decomp_2023.do: This script carries out the price variance decomposition exercises we perform in Appendix C.
 
-R_maps_2023: Creates all figures in the paper. Takes arguments of .csv outputs from the “_Data_postAER” folder.
-
 
 # Data Description for the Data Repo
+
+There are four folders: raw, processed,.sters, and temp.
+
+## Raw
+
+Contains all raw data files used in our analysis. This includes the LBNL tracking the sun data on individual solar PV systems, the deepsolar dataset, EIA data on residential electricity prices and consumption, ACS data on county-level income, NOAA data on state-level heating and cooling degree days, 
+
+## Processed
+
+Processed files. This includes the main estimating sample as well as covariates for the 3,074 counties used in our simulations and counterfactuals for 2018.
+
+## Temp
+
+Temporary directory containing intermediate data files used to construct our sample.
+
+## .sters
+
+Regression outputs.
 
