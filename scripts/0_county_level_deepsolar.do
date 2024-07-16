@@ -287,6 +287,7 @@ gen  county_level_res_gen = tract_level_R_gen
 gen county_level_res_purchases= tract_R_purchases 
 gen county_res_ratio = county_level_res_gen/county_level_res_purchases
 gen HH_share = solar_system_count_residential/household_count
+gen PA_perHH = total_panel_area_residential/household_count
 destring fips5, replace
 
 

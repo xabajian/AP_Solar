@@ -80,6 +80,25 @@ ggsave("insolation.pdf",map1,device="pdf",width=9,height=7,units="in",dpi="print
 #* Plot HH Share
 #*#*@#$%@#$%@#$%@#$%@#$%@
 
+##PA_perHH HH_share
+
+map2=plot_usmap(
+  regions = "counties",
+  exclude=c("AK","HI"),
+  data = deepsolar_data,
+  values = "PA_perHH",
+  show.legend = TRUE,
+  labels = FALSE,
+  label_color = "black",
+  size=0.00000000000000001,
+  color="grey"
+) +  #scale_fill_gradientn(colours=pal,name = " Installation Rate",label = scales::comma
+scale_fill_continuous(low="white", high="red", name = "Panel Area per Household", label = scales::comma,
+                      limits=c(0,0.5),oob=squish
+) + theme(legend.position = "right"
+)
+ggsave("PA_per_HH.pdf",map2,device="pdf",width=9,height=7,units="in",dpi="print")
+
 
 map2=plot_usmap(
   regions = "counties",
@@ -92,12 +111,11 @@ map2=plot_usmap(
   size=0.00000000000000001,
   color="grey"
 ) +  #scale_fill_gradientn(colours=pal,name = "Household Installation Rate",label = scales::comma
-scale_fill_continuous(low="white", high="red", name = "Household Installation Rate", label = scales::comma,
-                      limits=c(0,0.02),oob=squish
-) + theme(legend.position = "right"
-)
+  scale_fill_continuous(low="white", high="red", name = "Household Installation Rate", label = scales::comma,
+                        limits=c(0,0.5),oob=squish
+  ) + theme(legend.position = "right"
+ )
 ggsave("install_rate.pdf",map2,device="pdf",width=9,height=7,units="in",dpi="print")
-
 
 
 #*#*@#$%@#$%@#$%@#$%@#$%@#$

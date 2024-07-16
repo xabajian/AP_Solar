@@ -23,7 +23,7 @@ global processed "$root/_Data_postAER/Processed"
 
 
 use "$processed/estimating_sample.dta", clear
-
+codebook county_byte
 
 
 /*
@@ -452,6 +452,11 @@ $@#$%@$@#$%@$@#$%@$@#$%@
 */
 
  set maxiter 300
+ //Note interaction is important here -- prices increase in longitude going east.
+reg p_solar lon 
+reg p_solar lon lat
+reg p_solar lon lat daily_solar_flux_fixed
+
 
 // 	//one step estimator ---- national price
 //

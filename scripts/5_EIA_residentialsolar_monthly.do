@@ -1,5 +1,4 @@
 clear all
-
 cd "/Users/xabajian/Library/CloudStorage/Box-Box/Solar_Panels"
 
 
@@ -466,10 +465,6 @@ reghdfe  grid_per_hh solar_per_hh  CDDs HDDs [aw = customers],  vce(robust) abso
 
 
 
-//FDs
-//twowayfeweights grid_per_hh state month_date solar_per_hh, type(fdS) 
-
-
 
 //First differences
 reg  d.grid_per_hh d.solar_per_hh [aw = customers], r
@@ -480,7 +475,7 @@ areg  d.grid_per_hh d.solar_per_hh   i.month_date [aw = customers], absorb(state
 
 
 /*
-generate peak kw and cumulative kw instrument and pray
+generate peak kw and cumulative kw instrument
 
 
 see here -- https://www.eia.gov/renewable/monthly/solar_photo/pdf/renewable.pdf
@@ -532,8 +527,8 @@ replace cumkw=147900440 if year ==2022
 
 reg solar_per_hh cumkw [aw = customers], r
 reg solar_per_hh L.cumkw [aw = customers], r
-
 reg solar_per_hh L.cumkw i.state i.month_dummy [aw = customers], r
+reg solar_per_hh L.cumkw HDDs CDDs i.state i.month_dummy [aw = customers], r
 
 
 
@@ -616,23 +611,24 @@ keep if _merge!=2
 drop _merge
 
 
-//IV - use lag of cumulative shipments as instrument --/
+*/lagged c/
 
+ 
+
+//IV - use lag of cumulative shipments as instrument --/
 xtset state month_date
 
-//lag by distance
-gen lagged_instrument_cumulative = L.cumkw * LON
-gen lagged_instrument_peak= L.peakkw * LON
-gen lagged_instrument_ppw= L.period_priceperwatt * LON
-gen lagged_instrument_shipments = L.cum_shipments * LON
+///OLS
+reg grid_per_hh solar_per_hh HDDs CDDs i.state i.month_dummy  [aw = customers], vce(robust) 
+reg grid_per_hh solar_per_hh HDDs CDDs i.state i.month_date  [aw = customers], vce(robust) 
+ivregress 2sls  grid_per_hh HDDs CDDs i.state i.month_dummy  (solar_per_hh= L.peakkw)  [aw = customers], vce(robust) 
 
-
-gen lag_cum = L.cumkw
 
 //$@#%#$@%$#@%$#@%$%@#$%@#$%
 //(1)
-ivregress gmm grid_per_hh (solar_per_hh= L.cumkw) [aw = customers], vce(robust)
+ivregress gmm grid_per_hh (solar_per_hh= L.cumkw) [aw = customers], vce(robust) 
 ivregress 2sls grid_per_hh (solar_per_hh= L.cumkw) [aw = customers], vce(robust)
+
 //ivregress 2sls grid_per_hh (solar_per_hh= lagged_instrument_cumulative) [aw = customers], vce(robust)
 display e(b)[1,1]
 //-.81520422
@@ -667,7 +663,9 @@ test (solar_per_hh  = -1)
 //$@#%#$@%$#@%$#@%$%@#$%@#$%
 //(3)
 ivregress 2sls  grid_per_hh HDDs CDDs i.state i.month_dummy  (solar_per_hh= L.cumkw)  [aw = customers], vce(robust) 
-//ivregress 2sls  grid_per_hh HDDs CDDs i.state i.month_dummy  (solar_per_hh= lagged_instrument_cumulative)  [aw = customers], vce(robust) 
+//ivregress 2sls  grid_per_hh HDDs CDDs i.state i.month_dummy  (solar_per_hh= L.cumkw)  [aw = customers], vce(cluster state_month) 
+
+
 outreg using "$processed/passthrough_IV.tex", se bdec(3 3) nostars merge  tex  ctitle("", "(FEs ctr)") keep(solar_per_hh HDDs CDDs)
 
 display e(b)[1,1]
@@ -692,10 +690,7 @@ test (solar_per_hh  = -1)
 */
 
 
-ivregress 2sls grid_per_hh HDDs CDDs i.state i.month_dummy  (solar_per_hh= L.cumkw)  [aw = customers], vce(robust) 
-
-
-
+//ivregress 2sls grid_per_hh HDDs CDDs i.state i.month_dummy  (solar_per_hh= L.cumkw)  [aw = customers], vce(robust) 
 ivregress 2sls grid_per_hh HDDs CDDs i.state i.month_dummy  (solar_per_hh= lag_cum) , vce(bootstrap, reps(500)) 
 
 display e(b)[1,1]
@@ -720,40 +715,50 @@ test (solar_per_hh  = -1)
 		 
 */
 
+//Groups year-by-state
+ egen state_by_year = group(state year), label
 
- 
 //Alternative IV - use lag of cumulative value of shipments as instrument --
 
 
 //$@#%#$@%$#@%$#@%$%@#$%@#$%
+//(4')
+// //alterantive instrument
+// ivregress 2sls grid_per_hh HDDs CDDs i.state i.month_dummy  (solar_per_hh= L.cum_shipments)  [aw = customers], vce(robust)
+// display e(b)[1,1]
+// test (solar_per_hh  = -1)
+// outreg using "$processed/passthrough_IV.tex", se bdec(3 3) nostars merge  tex  ctitle("", "(cum $s)") keep(solar_per_hh HDDs CDDs)
+//
+// /*
+//
+//
+// . display e(b)[1,1]
+// -.89859885
+//
+// . test (solar_per_hh  = -1)
+//
+//  ( 1)  solar_per_hh = -1
+//
+//            chi2(  1) =    0.14
+//          Prob > chi2 =    0.7066
+//
+// . 
+// end of do-file
+//
+// . 
+//
+// */
+
+
+ //$@#%#$@%$#@%$#@%$%@#$%@#$%
 //(4)
-//alterantive instrument
-ivregress 2sls grid_per_hh HDDs CDDs i.state i.month_dummy  (solar_per_hh= L.cum_shipments)  [aw = customers], vce(robust)
+//state specific time trends
+ ivregress 2sls grid_per_hh HDDs CDDs i.state##c.month_date  (solar_per_hh= L.cumkw) , vce(robust) 
 display e(b)[1,1]
 test (solar_per_hh  = -1)
 outreg using "$processed/passthrough_IV.tex", se bdec(3 3) nostars merge  tex  ctitle("", "(cum $s)") keep(solar_per_hh HDDs CDDs)
 
-/*
-
-
-. display e(b)[1,1]
--.89859885
-
-. test (solar_per_hh  = -1)
-
- ( 1)  solar_per_hh = -1
-
-           chi2(  1) =    0.14
-         Prob > chi2 =    0.7066
-
-. 
-end of do-file
-
-. 
-
-*/
-
-
+ 
 
 //$@#%#$@%$#@%$#@%$%@#$%@#$%
 //(5)
@@ -792,7 +797,7 @@ estat overid, forceweights
 
 */
 
-///other specs
+//OTHER SPECIFICATIONS 
 
 
 //overid no CA
@@ -819,24 +824,28 @@ display e(b)[1,1]
 //$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%
 
 
+gen lagged_instrument_cumulative = L.cumkw * LON
 //(1)
-ivregress 2sls grid_per_hh gas_per_customer HDDs CDDs (solar_per_hh= lagged_instrument_cumulative) [aw = customers] if state_string!="Hawaii" & state_string!="Alaska", vce(robust)
+ivregress 2sls grid_per_hh gas_per_customer (solar_per_hh= lagged_instrument_cumulative) [aw = customers] if state_string!="Hawaii" & state_string!="Alaska", vce(robust)
 display e(b)[1,1]
 //-1.3795585
+
 outreg using "$processed/passthrough_IV.tex", se bdec(3 3) nostars replace tex ctitle("","(1)")  title("Decomposition of Solar Panel Area per Household") keep(solar_per_hh gas_per_customer HDDs CDDs)
 
 //(2)
-ivregress 2sls grid_per_hh gas_per_customer HDDs CDDs i.month_dummy  (solar_per_hh= lagged_instrument_cumulative) [aw = customers] if state_string!="Hawaii" & state_string!="Alaska", vce(robust)
+ivregress 2sls grid_per_hh gas_per_customer HDDs CDDs (solar_per_hh= lagged_instrument_cumulative) [aw = customers] if state_string!="Hawaii" & state_string!="Alaska", vce(robust)
 display e(b)[1,1]
 //-.67878354
 outreg using "$processed/passthrough_IV.tex", se bdec(3 3) nostars merge  tex  ctitle("", "(State FEs)") keep(solar_per_hh gas_per_customer HDDs CDDs)
 
 
 //(3 - TWFE, preferred)
-ivregress 2sls grid_per_hh gas_per_customer HDDs CDDs i.state i.month_dummy (solar_per_hh= lagged_instrument_cumulative)  [aw = customers]if state_string!="Hawaii" & state_string!="Alaska" , vce(robust)
+ivregress 2sls grid_per_hh gas_per_customer HDDs CDDs i.state i.month_dummy (solar_per_hh= lagged_instrument_cumulative)  [aw = customers] if state_string!="Hawaii" & state_string!="Alaska" , vce(robust)
 display e(b)[1,1]
 //-.45630222
 outreg using "$processed/passthrough_IV.tex", se bdec(3 3) nostars merge  tex  ctitle("", "(TWFEs)") keep(solar_per_hh gas_per_customer HDDs CDDs)
+
+
 
 
 

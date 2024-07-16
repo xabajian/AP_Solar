@@ -691,6 +691,8 @@ Part 5: Use the NREL PV watts API to
 
 use "$temp/TTS_int_2023_step4.dta", clear
 
+//count covered states
+ codebook state_from_TTS
 //Kick out the covered counties
 preserve
 rename lat LAT
@@ -837,7 +839,7 @@ twoway (kdensity alt_gen_mid  if alt_gen_mid <= 40000) ( kdensity annual_generat
 xtitle("Annual Generation, kWh") legend(order(1 "NREL API" 2 "Heuristic")) title("Kernel Density of Estimates for System-" "level Annual Generation")
 graph export "$processed/NREL_v_heuristic_kdensity.png", replace
 
-
+codebook 
 
 //correlation in appendix
 reg annual_generation alt_gen_mid, r
@@ -1200,7 +1202,6 @@ gen gap_nosubs_90 = price_gap_raw
 
 //nice figure of time kdensities
 
-
 twoway kdensity price_gap_itc if price_gap_raw<= 0.3 & price_gap_itc>= -0.3, lcolor(blue) lwidth(thick) legend(label(1 "Full Subsidy Uptake")) || ///
 kdensity price_gap_noitc if price_gap_raw<= 0.3 & price_gap_itc>= -0.3, color(orange) lwidth(thick) legend(label(2 "No ITC Uptake") region(lcolor(none))) ||  ///
 kdensity price_gap_raw if price_gap_raw<= 0.3 & price_gap_itc>= -0.3, color(red) lwidth(thick) legend(label(3 "No Subsidy Uptake") region(lcolor(none)))  ///
@@ -1210,9 +1211,11 @@ xline(0, lpattern(dash) lcolor(gray))
 graph export "$processed/marukps_kdensity.png", as(png)   replace
 
 
+preserve
 
-
-//collapse over years to get time series with quantile intervals
+/*
+//collapse over years to get time series with quantile intervals, all systems
+*/
 collapse (p10) gap_itc_10 gap_nosubs_10  (p90) gap_itc_90 gap_nosubs_90 (p50) gap_itc_50 gap_nosubs_50 (mean) price_gap_itc price_gap_raw, by(year)
 
 
@@ -1228,7 +1231,40 @@ yline(0, lpattern(dash) lcolor(gray%50))
 graph export "$processed/marukps_TS.png", as(png)   replace
 
 
+restore
 
+/*
+repeat firgue 3 exercise for TPO systems only
+*/
+
+tab thirdpartyowned
+
+/*
+
+Third-Party |
+      Owned |      Freq.     Percent        Cum.
+------------+-----------------------------------
+      -9999 |     58,539        5.65        5.65
+          0 |    549,716       53.10       58.76
+          1 |    426,944       41.24      100.00
+------------+-----------------------------------
+      Total |  1,035,199      100.00
+*/
+
+ keep if thirdpartyowned==1
+ 
+ collapse (p10) gap_itc_10 gap_nosubs_10  (p90) gap_itc_90 gap_nosubs_90 (p50) gap_itc_50 gap_nosubs_50 (mean) price_gap_itc price_gap_raw, by(year)
+
+ twoway  (rarea gap_itc_10 gap_itc_90 year, fcolor(blue%15) color(white%0)  ) (rarea gap_nosubs_10 gap_nosubs_90 year, fcolor(red%15) lcolor(white%0)   ) ///
+(line gap_itc_50 year, lcolor(blue) lwidth(    medthick ) ) (line gap_nosubs_50 year, lcolor(red) lwidth(    medthick ) ), ///
+ytitle("Solar vs. Grid Price Differential ($/kWh)") xtitle("Year") xlabel( 2000(4)2020  ) ///
+ note("Note: Solid lines denote the annual median difference at the system level between the LCOE we estimate for each" "third-party owned system and the grid electricity price ($/kwh) in that county. The dashed grey line indicates the" " breakeven point where the prices are equal. Shaded regions denote the 10th and 90th percentiles in each year.") ///
+legend(pos(2) ring(0) order(3 "Full Subsidy Uptake" 4 "No Subsidy Uptake") region(lcolor(none)) ) ///
+title("Median County-Level Third-Party Owned Solar PV " "and Grid Electricity Price Differentials, 2000-2018") ///
+yline(0, lpattern(dash) lcolor(gray%50))
+graph export "$processed/marukps_TS_TPOonly.png", as(png)   replace
+ 
+ 
  
 /*
 !!@#$!@#$!@#$!!@#$!@#$!@#$!!@#$!@#$!@#$
@@ -1252,7 +1288,8 @@ use  "$temp/TTS_county_annual_prices.dta", clear
 
 //unique entry counts
 codebook year county_byte
-//         Unique values: 629
+codebook year county_byte if LCOE_all_subs!=.
+//         Unique values: 615
 
 
 //clean house
