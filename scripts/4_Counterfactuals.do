@@ -35,7 +35,13 @@ use "$temp/counterfactual_input_2023s.dta", clear
 
 
 
-sum
+sum c_grid_EIA, d
+sum c_grid_EIA [aw=household_count], d
+
+kdensity c_grid_EIA [aw=household_count], xtitle("Average Residential Electricity Purchased in 2018, kWh")
+graph export "$processed/electricity_kdensity.png", replace
+
+
 sum mean_hh_income
 
 
@@ -441,18 +447,31 @@ gen d_gridq_county =  cfx_county_grid-baseline_county_grid
 
 //generate total and co2 external costs and put in dollars
 gen co2_county_ext_costs = d_gridq_county*damagesCO2/100
+sum damagesCO2, d
+scalar median_damage = r(p50)
+scalar median_factor = median_damage/5000
+display median_factor
+gen co2_county_ext_costs_median = d_gridq_county*median_damage/100
 gen all_county_ext_costs = d_gridq_county*emc/100
 
 //convert co2 to emissions abateds
 gen co2_county_abatement = co2_county_ext_costs/(50)
 label var co2_county_abatement "total co2 emissions abated annualy in each county, Metric tons CO2"
+gen co2_county_abatement_median = co2_county_ext_costs_median/(50)
 
 //generate total estimated abatement
 sum co2_county_abatement
+sum co2_county_abatement_median
+
 gen abatement_positive = co2_county_abatement * (co2_county_abatement>0)
 egen total_abatement = total(co2_county_abatement)
 display total_abatement[1]
 //4326244.5
+
+egen total_abatement_median = total(co2_county_abatement_median)
+display total_abatement_median[1]
+//5540408.5
+
 egen net_abatement = total(abatement_positive)
  sum net_abatement total_abatement
  
