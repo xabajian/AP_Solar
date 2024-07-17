@@ -409,6 +409,7 @@ while their standard deviation is equal to .25793865.
 
 
 */
+
 //second less restrictive
 //twowayfeweights grid_per_hh state month_date solar_per_hh, type(feTR) controls( CDDs HDDs)
 /*
@@ -475,35 +476,12 @@ areg  d.grid_per_hh d.solar_per_hh   i.month_date [aw = customers], absorb(state
 
 
 /*
-generate peak kw and cumulative kw instrument
+cumulative kw instrument
 
 
 see here -- https://www.eia.gov/renewable/monthly/solar_photo/pdf/renewable.pdf
 */
 
-gen peakkw=.
-replace peakkw=320208 if year==2006
-replace peakkw=320208 if year==2007
-replace peakkw=494148 if year==2008
-replace peakkw=920693 if year==2009
-replace peakkw=1188879 if year==2010
-replace peakkw=2644498 if year==2011
-replace peakkw=3772075 if year==2012
-replace peakkw=4655005 if year==2013
-replace peakkw=4984881 if year==2014
-replace peakkw=6237524 if year==2015
-replace peakkw=9942978 if year==2016
-replace peakkw=13451187 if year==2017
-replace peakkw=7971622 if year==2018
-replace peakkw=16372314  if year==2019
-replace peakkw=20412296 if year==2020
-replace peakkw=26339918 if year==2021
-replace peakkw=17327669 if year==2022
-
-
-
-reg solar_per_hh peakkw [aw = customers] , r
-reg solar_per_hh L.peakkw [aw = customers] , r
 
 gen cumkw=.
 replace cumkw=320208 if year ==2006
@@ -530,7 +508,9 @@ reg solar_per_hh L.cumkw [aw = customers], r
 reg solar_per_hh L.cumkw i.state i.month_dummy [aw = customers], r
 reg solar_per_hh L.cumkw HDDs CDDs i.state i.month_dummy [aw = customers], r
 
-
+/*
+other instruments
+*/
 
 gen period_shipments =.
 replace period_shipments=1120728 if year ==2006
@@ -585,15 +565,8 @@ reg solar_per_hh L.cum_shipments L.cumkw i.state i.month_dummy [aw = customers],
 
 
 
-gen period_priceperwatt = period_shipments/peakkw
-
-
-reg solar_per_hh period_priceperwatt [aw = customers], r
-reg solar_per_hh L.period_priceperwatt [aw = customers], r
-
-
 /*
-merge residential ng consumption naturals
+merge residential natural gas consumption
 */
 
 merge m:1 state month_date using "$temp/EIA_gas_per_hh.dta"
@@ -621,7 +594,6 @@ xtset state month_date
 ///OLS
 reg grid_per_hh solar_per_hh HDDs CDDs i.state i.month_dummy  [aw = customers], vce(robust) 
 reg grid_per_hh solar_per_hh HDDs CDDs i.state i.month_date  [aw = customers], vce(robust) 
-ivregress 2sls  grid_per_hh HDDs CDDs i.state i.month_dummy  (solar_per_hh= L.peakkw)  [aw = customers], vce(robust) 
 
 
 //$@#%#$@%$#@%$#@%$%@#$%@#$%
@@ -718,6 +690,8 @@ test (solar_per_hh  = -1)
 //Groups year-by-state
  egen state_by_year = group(state year), label
 
+ 
+ 
 //Alternative IV - use lag of cumulative value of shipments as instrument --
 
 
@@ -819,7 +793,10 @@ display e(b)[1,1]
 
 
 //UPDATE 6/27/223 -- with gas
-//$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%
+//$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$
+
+/*
+
 //$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%
 //$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%
 
@@ -846,17 +823,6 @@ display e(b)[1,1]
 outreg using "$processed/passthrough_IV.tex", se bdec(3 3) nostars merge  tex  ctitle("", "(TWFEs)") keep(solar_per_hh gas_per_customer HDDs CDDs)
 
 
-
-
-
-//alt instrument
-ivregress 2sls grid_per_hh gas_per_customer  HDDs CDDs i.state i.month_dummy  (solar_per_hh= lagged_instrument_peak )  [aw = customers] if state_string!="Hawaii" & state_string!="Alaska"  , vce(robust) 
-outreg using "$processed/passthrough_IV.tex", se bdec(3 3) nostars merge  tex  ctitle("", "(alt inst)") keep(solar_per_hh gas_per_customer HDDs CDDs)
-
-
-//overid
-ivregress gmm grid_per_hh gas_per_customer  HDDs CDDs i.state i.month_dummy  (solar_per_hh= lagged_instrument_cumulative lagged_instrument_peak )  [aw = customers] if state_string!="Hawaii" & state_string!="Alaska"  , vce(robust) 
-outreg using "$processed/passthrough_IV.tex", se bdec(3 3) nostars merge  tex  ctitle("", "(overid)") keep(solar_per_hh gas_per_customer HDDs CDDs)
 
 
 

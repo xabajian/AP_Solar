@@ -528,8 +528,8 @@ qui{
 				//kick out parameters 
 				matrix kappa = kappa \ /kappa
 				matrix rho = rho \ /rho
-				matrix gamma_california = gamma_california \ [xg]state_gamma_3
-				matrix delta_california = delta_california \ [xd]state_delta_3
+				matrix gamma_california = gamma_california \ [xg]state_gamma_6
+				matrix delta_california = delta_california \ [xd]state_delta_6
 				matrix sbar = sbar \ /sbar
 				matrix gbar = gbar \ /gbar
 				matrix markup = markup \ `i'
