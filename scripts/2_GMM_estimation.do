@@ -123,7 +123,7 @@ Henry Hub Price Series: https://fred.stlouisfed.org/series/DHHNGSP#0
 
 */
 
-//hentry hub instrument
+//henry hub instrument
 gen h_hub =.
 replace h_hub=6.73124497991968 if year == 2006
 replace h_hub=6.96718253968254 if year == 2007
@@ -362,9 +362,212 @@ restore
 
 /*
 $@#$%@$@#$%@$@#$%@$@#$%@
-Estimations
+Section 1. Estimations
 $@#$%@$@#$%@$@#$%@$@#$%@
 */
+
+
+/*
+$@#$%@$@#$%@$@#$%@$@#$%@
+Force idiosyncratic weights at state level
+$@#$%@$@#$%@$@#$%@$@#$%@
+*/
+
+global P_state_E "((1- {xg:})^( {rho})*p_solar^(1- {rho}) + {xg:}^( {rho})*p_grid^(1- {rho}))^(1/(1- {rho}))"
+global P_state_C "((1- {xd:})^ {kappa} + {xd: }^ {kappa} *($P_state_E)^ (1- {kappa}))^(1/(1- {kappa}))"
+
+display "$P_state_E $P_state_C"
+
+//generate gamma and delta dummies as well as state-level instruments
+foreach i of numlist $state_code_list  {
+    
+    gen state_gamma_`i' = (state_fips==`i')
+    gen state_delta_`i' = (state_fips==`i')
+    gen state_kappa_`i' = (state_fips==`i')
+    gen state_rho_`i' = (state_fips==`i')
+    gen state_z_`i' = (state_fips==`i')*period_priceperwatt
+    gen state_lon_z_`i' = (state_fips==`i')*period_priceperwatt*lon
+    gen p_elec_us_`i' = (state_fips==`i')*p_elec_us
+	//gen state_cdd_`i' = (state_fips==`i')*log(CDDs)
+	gen state_cdd_`i' = (state_fips==`i')*log(L.CDDs)
+    gen h_hub_`i' = (state_fips==`i')*h_hub
+}
+
+
+
+/*
+$@#$%@$@#$%@$@#$%@$@#$%@
+Prefered specification: State level weights plus non-homothetic terms plus other instruments
+$@#$%@$@#$%@$@#$%@$@#$%@
+*/
+
+//Note instrument of state_lon_z_ is valid here -- prices increase in longitude going east.
+reg p_solar lon 
+reg p_solar lon lat
+reg p_solar lon lat daily_solar_flux_fixed
+
+
+/*
+$@#$%@$@#$%@$@#$%@$@#$%@
+//baseline estimate: 
+
+	(1) two price instruments interacted with residuals from structural demand eqations when evaluated at those parameter values along with 
+	(2)  this estimator sets the expectation of structural demand errors in each state to zero along with those errors interacted with instruments
+$@#$%@$@#$%@$@#$%@$@#$%@
+*/
+
+ set maxiter 300
+ 
+ 
+
+
+
+/*
+twostep step estimator ---- robust standard errors
+*/
+gmm (eq1: log(c_grid)  - log( {gbar=1000} + ( {xg:	state_gamma_* }/p_grid)^ {rho=4} *$P_state_E^ ( {rho}-1) *(elect_expend - {sbar} * p_solar - {gbar}*p_grid ))) ///
+    (eq2: log(c_solar) - log( {sbar} + ((1- {xg: })/p_solar)^ {rho}*$P_state_E^ ( {rho}-1)*(elect_expend - {sbar} * p_solar - {gbar}*p_grid ))) ///
+    (eq3: log(c_outside) - log( (1- {xd: state_delta_* })^( {kappa=0.5})*$P_state_C^ ( {kappa}-1) * (mean_hh_income - {sbar} * p_solar - {gbar}*p_grid ) ) ), ///
+    twostep winitial(identity)  vce(robust) ///
+    instruments(eq1: state_lon_z_* h_hub_* state_gamma_*, noconstant) ///
+    instruments(eq2:  state_lon_z_* h_hub_* state_gamma_*, noconstant) ///
+    instruments(eq3: state_lon_z_* h_hub_*  state_gamma_*, noconstant) ///
+    from(	state_gamma_4 0.9 	state_gamma_5 0.9 	state_gamma_6 0.9 	state_gamma_9 0.9 	state_gamma_10 0.9 	state_gamma_12 0.9 		  	state_gamma_25 0.9 	 	state_gamma_27 0.9  	state_gamma_33 0.9 	state_gamma_34 0.9 	state_gamma_36 0.9 	state_gamma_41 0.9 	state_gamma_42 0.9 	state_gamma_48 0.9 	state_gamma_50 0.9  state_gamma_55 0.9 	state_delta_4 0.1 	state_delta_5 0.1 	state_delta_6 0.1 	state_delta_9 0.1 	state_delta_10 0.1 	state_delta_12 0.1 	 	state_delta_25 0.1 	state_delta_27 0.1 state_delta_33 0.1 	state_delta_34 0.1 	state_delta_36 0.1 	state_delta_41 0.1 	state_delta_42 0.1 	state_delta_48 0.1 	state_delta_50 0.1 	 state_delta_55 0.1)
+    
+	
+	
+
+//save out these estimates
+//estimates save "$sters/main_est_6_25.ster", replace
+estimates use "$sters/main_est_6_25.ster"
+estimates replay
+estat overid
+
+
+/*
+//twostep step estimator ----  bootstrapped standard errors
+*/
+gmm (eq1: log(c_grid)  - log( {gbar=1000} + ( {xg:	state_gamma_* }/p_grid)^ {rho=4} *$P_state_E^ ( {rho}-1) *(elect_expend - {sbar} * p_solar - {gbar}*p_grid ))) ///
+    (eq2: log(c_solar) - log( {sbar} + ((1- {xg: })/p_solar)^ {rho}*$P_state_E^ ( {rho}-1)*(elect_expend - {sbar} * p_solar - {gbar}*p_grid ))) ///
+    (eq3: log(c_outside) - log( (1- {xd: state_delta_* })^( {kappa=0.5})*$P_state_C^ ( {kappa}-1) * (mean_hh_income - {sbar} * p_solar - {gbar}*p_grid ) ) ), ///
+    twostep winitial(identity)  vce(bootstrap, reps(50)) ///
+    instruments(eq1: state_lon_z_* h_hub_* state_gamma_*, noconstant) ///
+    instruments(eq2:  state_lon_z_* h_hub_* state_gamma_*, noconstant) ///
+    instruments(eq3: state_lon_z_* h_hub_*  state_gamma_*, noconstant) ///
+    from(	state_gamma_4 0.9 	state_gamma_5 0.9 	state_gamma_6 0.9 	state_gamma_9 0.9 	state_gamma_10 0.9 	state_gamma_12 0.9 		  	state_gamma_25 0.9 	 	state_gamma_27 0.9  	state_gamma_33 0.9 	state_gamma_34 0.9 	state_gamma_36 0.9 	state_gamma_41 0.9 	state_gamma_42 0.9 	state_gamma_48 0.9 	state_gamma_50 0.9  state_gamma_55 0.9 	state_delta_4 0.1 	state_delta_5 0.1 	state_delta_6 0.1 	state_delta_9 0.1 	state_delta_10 0.1 	state_delta_12 0.1 	 	state_delta_25 0.1 	state_delta_27 0.1 state_delta_33 0.1 	state_delta_34 0.1 	state_delta_36 0.1 	state_delta_41 0.1 	state_delta_42 0.1 	state_delta_48 0.1 	state_delta_50 0.1 	 state_delta_55 0.1)
+    
+//save out 2, bootsrapped
+//estimates save "$sters/main_est_6_25_BS.ster", replace
+estimates use "$sters/main_est_6_25_BS.ster"
+estimates replay
+estat overid
+
+
+/*
+//twostep step estimator ----  markups
+*/
+
+preserve
+replace p_solar = 1.05 * p_solar
+
+
+gmm (eq1: log(c_grid)  - log( {gbar=1000} + ( {xg:	state_gamma_* }/p_grid)^ {rho=4} *$P_state_E^ ( {rho}-1) *(elect_expend - {sbar} * p_solar - {gbar}*p_grid ))) ///
+    (eq2: log(c_solar) - log( {sbar} + ((1- {xg: })/p_solar)^ {rho}*$P_state_E^ ( {rho}-1)*(elect_expend - {sbar} * p_solar - {gbar}*p_grid ))) ///
+    (eq3: log(c_outside) - log( (1- {xd: state_delta_* })^( {kappa=0.5})*$P_state_C^ ( {kappa}-1) * (mean_hh_income - {sbar} * p_solar - {gbar}*p_grid ) ) ), ///
+    twostep winitial(identity)  vce(robust) ///
+    instruments(eq1: state_lon_z_* h_hub_* state_gamma_*, noconstant) ///
+    instruments(eq2:  state_lon_z_* h_hub_* state_gamma_*, noconstant) ///
+    instruments(eq3: state_lon_z_* h_hub_*  state_gamma_*, noconstant) ///
+    from(	state_gamma_4 0.9 	state_gamma_5 0.9 	state_gamma_6 0.9 	state_gamma_9 0.9 	state_gamma_10 0.9 	state_gamma_12 0.9 		  	state_gamma_25 0.9 	 	state_gamma_27 0.9  	state_gamma_33 0.9 	state_gamma_34 0.9 	state_gamma_36 0.9 	state_gamma_41 0.9 	state_gamma_42 0.9 	state_gamma_48 0.9 	state_gamma_50 0.9  state_gamma_55 0.9 	state_delta_4 0.1 	state_delta_5 0.1 	state_delta_6 0.1 	state_delta_9 0.1 	state_delta_10 0.1 	state_delta_12 0.1 	 	state_delta_25 0.1 	state_delta_27 0.1 state_delta_33 0.1 	state_delta_34 0.1 	state_delta_36 0.1 	state_delta_41 0.1 	state_delta_42 0.1 	state_delta_48 0.1 	state_delta_50 0.1 	 state_delta_55 0.1)
+    
+	
+	
+
+
+//save out these estimates
+estimates save "$sters/markup_est_6_25.ster", replace
+estimates replay
+estat overid
+
+restore
+
+
+
+
+//monte carlo 
+matrix kappa = [.]
+matrix rho = [.]
+matrix gamma_california = [.]
+matrix delta_california = [.]
+matrix sbar = [.]
+matrix gbar = [.]
+matrix markup = [.]
+
+//loop over markups
+qui{
+	//select number of leads as two years
+		forvalues i = 0.1(0.1)1 {
+			preserve
+
+				//markups
+				replace p_solar = (1 + `i') * p_solar
+				
+				//run estimation 
+				gmm (eq1: log(c_grid)  - log( {gbar=1000} + ( {xg:	state_gamma_* }/p_grid)^ {rho=4} *$P_state_E^ ( {rho}-1) *(elect_expend - {sbar} * p_solar - {gbar}*p_grid ))) ///
+    (eq2: log(c_solar) - log( {sbar} + ((1- {xg: })/p_solar)^ {rho}*$P_state_E^ ( {rho}-1)*(elect_expend - {sbar} * p_solar - {gbar}*p_grid ))) ///
+    (eq3: log(c_outside) - log( (1- {xd: state_delta_* })^( {kappa=0.5})*$P_state_C^ ( {kappa}-1) * (mean_hh_income - {sbar} * p_solar - {gbar}*p_grid ) ) ), ///
+    twostep winitial(identity)  vce(robust) ///
+    instruments(eq1: state_lon_z_* h_hub_* state_gamma_*, noconstant) ///
+    instruments(eq2:  state_lon_z_* h_hub_* state_gamma_*, noconstant) ///
+    instruments(eq3: state_lon_z_* h_hub_*  state_gamma_*, noconstant) ///
+    from(	state_gamma_4 0.9 	state_gamma_5 0.9 	state_gamma_6 0.9 	state_gamma_9 0.9 	state_gamma_10 0.9 	state_gamma_12 0.9 		  	state_gamma_25 0.9 	 	state_gamma_27 0.9  	state_gamma_33 0.9 	state_gamma_34 0.9 	state_gamma_36 0.9 	state_gamma_41 0.9 	state_gamma_42 0.9 	state_gamma_48 0.9 	state_gamma_50 0.9  state_gamma_55 0.9 	state_delta_4 0.1 	state_delta_5 0.1 	state_delta_6 0.1 	state_delta_9 0.1 	state_delta_10 0.1 	state_delta_12 0.1 	 	state_delta_25 0.1 	state_delta_27 0.1 state_delta_33 0.1 	state_delta_34 0.1 	state_delta_36 0.1 	state_delta_41 0.1 	state_delta_42 0.1 	state_delta_48 0.1 	state_delta_50 0.1 	 state_delta_55 0.1)
+    
+	
+				
+				
+				//kick out parameters 
+				matrix kappa = kappa \ /kappa
+				matrix rho = rho \ /rho
+				matrix gamma_california = gamma_california \ [xg]state_gamma_3
+				matrix delta_california = delta_california \ [xd]state_delta_3
+				matrix sbar = sbar \ /sbar
+				matrix gbar = gbar \ /gbar
+				matrix markup = markup \ `i'
+				
+
+		
+			
+			restore
+	}
+	
+}
+
+ //Lagged terms pre-treatment
+
+
+
+svmat kappa
+svmat rho
+svmat sbar
+svmat gamma_california
+svmat delta_california
+svmat gbar
+svmat markup
+
+
+/*
+!!@#$!@#$!@#$
+!!@#$!@#$!@#$
+Part 1.3: Unused (alternative) model specifications
+!!@#$!@#$!@#$
+!!@#$!@#$!@#$
+*/
+
+
+
+	
+
+
 /*
 $@#$%@$@#$%@$@#$%@$@#$%@
 //homothetic version at country level for reference parameter values
@@ -396,145 +599,50 @@ estat overid
 
 
 			
-/*
-!!@#$!@#$!@#$
-!!@#$!@#$!@#$
-Part 1: Estimate preferred model specificaiton
-!!@#$!@#$!@#$
-!!@#$!@#$!@#$
-*/
 
 
 
 /*
 $@#$%@$@#$%@$@#$%@$@#$%@
-Force idiosyncratic weights at state level
+one step estimator ---- national price instrument
 $@#$%@$@#$%@$@#$%@$@#$%@
 */
-
-global P_state_E "((1- {xg:})^( {rho})*p_solar^(1- {rho}) + {xg:}^( {rho})*p_grid^(1- {rho}))^(1/(1- {rho}))"
-global P_state_C "((1- {xd:})^ {kappa} + {xd: }^ {kappa} *($P_state_E)^ (1- {kappa}))^(1/(1- {kappa}))"
-
-display "$P_state_E $P_state_C"
-
-//generate gamma and delta dummies as well as state-level instruments
-foreach i of numlist $state_code_list  {
-    
-    gen state_gamma_`i' = (state_fips==`i')
-    gen state_delta_`i' = (state_fips==`i')
-    gen state_kappa_`i' = (state_fips==`i')
-    gen state_rho_`i' = (state_fips==`i')
-    gen state_z_`i' = (state_fips==`i')*period_priceperwatt
-    gen state_lon_z_`i' = (state_fips==`i')*period_priceperwatt*lon
-    gen p_elec_us_`i' = (state_fips==`i')*p_elec_us
-	//gen state_cdd_`i' = (state_fips==`i')*log(CDDs)
-	gen state_cdd_`i' = (state_fips==`i')*log(L.CDDs)
-    gen h_hub_`i' = (state_fips==`i')*h_hub
-}
-
-
 
 
 
 /*
-$@#$%@$@#$%@$@#$%@$@#$%@
-State level weights plus non-homothetic terms plus other instruments
-$@#$%@$@#$%@$@#$%@$@#$%@
 */
 
-/*
-$@#$%@$@#$%@$@#$%@$@#$%@
-//baseline estimate: 
-
-	(1) two price instruments interacted with residuals from structural demand eqations when evaluated at those parameter values along with 
-	(2)  this estimator sets the expectation of structural demand errors in each state to zero along with those errors interacted with instruments
-$@#$%@$@#$%@$@#$%@$@#$%@
-*/
-
- set maxiter 300
- //Note interaction is important here -- prices increase in longitude going east.
-reg p_solar lon 
-reg p_solar lon lat
-reg p_solar lon lat daily_solar_flux_fixed
-
-
-// 	//one step estimator ---- national price
-//
-// gmm (eq1: log(c_grid)  - log( {gbar=1000} + ( {xg:	state_gamma_* }/p_grid)^ {rho=2} *$P_state_E^ ( {rho}-1) *(elect_expend - {sbar} * p_solar - {gbar}*p_grid ))) ///
-//     (eq2: log(c_solar) - log( {sbar} + ((1- {xg: })/p_solar)^ {rho}*$P_state_E^ ( {rho}-1)*(elect_expend - {sbar} * p_solar - {gbar}*p_grid ))) ///
-//     (eq3: log(c_outside) - log( (1- {xd: state_delta_* })^( {kappa=1.5})*$P_state_C^ ( {kappa}-1) * (mean_hh_income - {sbar} * p_solar - {gbar}*p_grid ) ) ), ///
-//     onestep winitial(identity) vce(robust)  ///
-//     instruments(eq1: state_z_* p_elec_us_* state_gamma_*, noconstant) ///
-//     instruments(eq2:  state_z_* p_elec_us_* state_gamma_*, noconstant) ///
-//     instruments(eq3: state_z_* p_elec_us_*  state_gamma_*, noconstant) ///
-//     from(	state_gamma_4 0.9 	state_gamma_5 0.9 	state_gamma_6 0.9 	state_gamma_9 0.9 	state_gamma_10 0.9 	state_gamma_12 0.9 		  	state_gamma_25 0.9 	 	state_gamma_27 0.9  	state_gamma_33 0.9 	state_gamma_34 0.9 	state_gamma_36 0.9 	state_gamma_41 0.9 	state_gamma_42 0.9 	state_gamma_48 0.9 	state_gamma_50 0.9  state_gamma_55 0.9 	state_delta_4 0.1 	state_delta_5 0.1 	state_delta_6 0.1 	state_delta_9 0.1 	state_delta_10 0.1 	state_delta_12 0.1 	 	state_delta_25 0.1 	state_delta_27 0.1 state_delta_33 0.1 	state_delta_34 0.1 	state_delta_36 0.1 	state_delta_41 0.1 	state_delta_42 0.1 	state_delta_48 0.1 	state_delta_50 0.1 	 state_delta_55 0.1)
-//	
-//	
-// 	//save out
-// //	estimates save "$sters/main_est.ster", replace
-// 	estimates use "$sters/main_est.ster"
-// estimates replay
-// estat overid
-
+gmm (eq1: log(c_grid)  - log( {gbar=1000} + ( {xg:	state_gamma_* }/p_grid)^ {rho=2} *$P_state_E^ ( {rho}-1) *(elect_expend - {sbar} * p_solar - {gbar}*p_grid ))) ///
+    (eq2: log(c_solar) - log( {sbar} + ((1- {xg: })/p_solar)^ {rho}*$P_state_E^ ( {rho}-1)*(elect_expend - {sbar} * p_solar - {gbar}*p_grid ))) ///
+    (eq3: log(c_outside) - log( (1- {xd: state_delta_* })^( {kappa=1.5})*$P_state_C^ ( {kappa}-1) * (mean_hh_income - {sbar} * p_solar - {gbar}*p_grid ) ) ), ///
+    onestep winitial(identity) vce(robust)  ///
+    instruments(eq1: state_z_* p_elec_us_* state_gamma_*, noconstant) ///
+    instruments(eq2:  state_z_* p_elec_us_* state_gamma_*, noconstant) ///
+    instruments(eq3: state_z_* p_elec_us_*  state_gamma_*, noconstant) ///
+    from(	state_gamma_4 0.9 	state_gamma_5 0.9 	state_gamma_6 0.9 	state_gamma_9 0.9 	state_gamma_10 0.9 	state_gamma_12 0.9 		  	state_gamma_25 0.9 	 	state_gamma_27 0.9  	state_gamma_33 0.9 	state_gamma_34 0.9 	state_gamma_36 0.9 	state_gamma_41 0.9 	state_gamma_42 0.9 	state_gamma_48 0.9 	state_gamma_50 0.9  state_gamma_55 0.9 	state_delta_4 0.1 	state_delta_5 0.1 	state_delta_6 0.1 	state_delta_9 0.1 	state_delta_10 0.1 	state_delta_12 0.1 	 	state_delta_25 0.1 	state_delta_27 0.1 state_delta_33 0.1 	state_delta_34 0.1 	state_delta_36 0.1 	state_delta_41 0.1 	state_delta_42 0.1 	state_delta_48 0.1 	state_delta_50 0.1 	 state_delta_55 0.1)
 	
-//twostep step estimator ----  CDDS
-// gmm (eq1: log(c_grid)  - log( {gbar=1000} + ( {xg:	state_gamma_* }/p_grid)^ {rho=4} *$P_state_E^ ( {rho}-1) *(elect_expend - {sbar} * p_solar - {gbar}*p_grid ))) ///
-//     (eq2: log(c_solar) - log( {sbar} + ((1- {xg: })/p_solar)^ {rho}*$P_state_E^ ( {rho}-1)*(elect_expend - {sbar} * p_solar - {gbar}*p_grid ))) ///
-//     (eq3: log(c_outside) - log( (1- {xd: state_delta_* })^( {kappa=0.5})*$P_state_C^ ( {kappa}-1) * (mean_hh_income - {sbar} * p_solar - {gbar}*p_grid ) ) ), ///
-//     twostep winitial(identity)  vce(robust) technique(bfgs) ///
-//     instruments(eq1: state_lon_z_* state_cdd_* state_gamma_*, noconstant) ///
-//     instruments(eq2:  state_lon_z_* state_cdd_* state_gamma_*, noconstant) ///
-//     instruments(eq3: state_lon_z_* state_cdd_*  state_gamma_*, noconstant) ///
-//     from(	state_gamma_4 0.9 	state_gamma_5 0.9 	state_gamma_6 0.9 	state_gamma_9 0.9 	state_gamma_10 0.9 	state_gamma_12 0.9 		  	state_gamma_25 0.9 	 	state_gamma_27 0.9  	state_gamma_33 0.9 	state_gamma_34 0.9 	state_gamma_36 0.9 	state_gamma_41 0.9 	state_gamma_42 0.9 	state_gamma_48 0.9 	state_gamma_50 0.9  state_gamma_55 0.9 	state_delta_4 0.1 	state_delta_5 0.1 	state_delta_6 0.1 	state_delta_9 0.1 	state_delta_10 0.1 	state_delta_12 0.1 	 	state_delta_25 0.1 	state_delta_27 0.1 state_delta_33 0.1 	state_delta_34 0.1 	state_delta_36 0.1 	state_delta_41 0.1 	state_delta_42 0.1 	state_delta_48 0.1 	state_delta_50 0.1 	 state_delta_55 0.1)
-//    
 	
-//twostep step estimator ---- 
+
+/*	
+//twostep step estimator ----  CDDs as instrument
+*/
 gmm (eq1: log(c_grid)  - log( {gbar=1000} + ( {xg:	state_gamma_* }/p_grid)^ {rho=4} *$P_state_E^ ( {rho}-1) *(elect_expend - {sbar} * p_solar - {gbar}*p_grid ))) ///
     (eq2: log(c_solar) - log( {sbar} + ((1- {xg: })/p_solar)^ {rho}*$P_state_E^ ( {rho}-1)*(elect_expend - {sbar} * p_solar - {gbar}*p_grid ))) ///
     (eq3: log(c_outside) - log( (1- {xd: state_delta_* })^( {kappa=0.5})*$P_state_C^ ( {kappa}-1) * (mean_hh_income - {sbar} * p_solar - {gbar}*p_grid ) ) ), ///
-    twostep winitial(identity)  vce(robust) ///
-    instruments(eq1: state_lon_z_* h_hub_* state_gamma_*, noconstant) ///
-    instruments(eq2:  state_lon_z_* h_hub_* state_gamma_*, noconstant) ///
-    instruments(eq3: state_lon_z_* h_hub_*  state_gamma_*, noconstant) ///
+    twostep winitial(identity)  vce(robust) technique(bfgs) ///
+    instruments(eq1: state_lon_z_* state_cdd_* state_gamma_*, noconstant) ///
+    instruments(eq2:  state_lon_z_* state_cdd_* state_gamma_*, noconstant) ///
+    instruments(eq3: state_lon_z_* state_cdd_*  state_gamma_*, noconstant) ///
     from(	state_gamma_4 0.9 	state_gamma_5 0.9 	state_gamma_6 0.9 	state_gamma_9 0.9 	state_gamma_10 0.9 	state_gamma_12 0.9 		  	state_gamma_25 0.9 	 	state_gamma_27 0.9  	state_gamma_33 0.9 	state_gamma_34 0.9 	state_gamma_36 0.9 	state_gamma_41 0.9 	state_gamma_42 0.9 	state_gamma_48 0.9 	state_gamma_50 0.9  state_gamma_55 0.9 	state_delta_4 0.1 	state_delta_5 0.1 	state_delta_6 0.1 	state_delta_9 0.1 	state_delta_10 0.1 	state_delta_12 0.1 	 	state_delta_25 0.1 	state_delta_27 0.1 state_delta_33 0.1 	state_delta_34 0.1 	state_delta_36 0.1 	state_delta_41 0.1 	state_delta_42 0.1 	state_delta_48 0.1 	state_delta_50 0.1 	 state_delta_55 0.1)
-    
+  
+
+
+
+
+
 	
 	
-
-//save out 2
-//estimates save "$sters/main_est_6_25.ster", replace
-estimates use "$sters/main_est_6_25.ster"
-estimates replay
-estat overid
-
-
-
-matrix G_hat = e(G)
-matrix W_hat = e(W)
-matrix G_t = G_hat'
-matrix inverse_in = - (G_t * W_hat * G_hat)
-matrix inverse_out = inv(inverse_in)
-matrix Lambda = inverse_out*G_t * W_hat
-
-
-//twostep step estimator ----  bootstrapped
-gmm (eq1: log(c_grid)  - log( {gbar=1000} + ( {xg:	state_gamma_* }/p_grid)^ {rho=4} *$P_state_E^ ( {rho}-1) *(elect_expend - {sbar} * p_solar - {gbar}*p_grid ))) ///
-    (eq2: log(c_solar) - log( {sbar} + ((1- {xg: })/p_solar)^ {rho}*$P_state_E^ ( {rho}-1)*(elect_expend - {sbar} * p_solar - {gbar}*p_grid ))) ///
-    (eq3: log(c_outside) - log( (1- {xd: state_delta_* })^( {kappa=0.5})*$P_state_C^ ( {kappa}-1) * (mean_hh_income - {sbar} * p_solar - {gbar}*p_grid ) ) ), ///
-    twostep winitial(identity)  vce(bootstrap, reps(50)) ///
-    instruments(eq1: state_lon_z_* h_hub_* state_gamma_*, noconstant) ///
-    instruments(eq2:  state_lon_z_* h_hub_* state_gamma_*, noconstant) ///
-    instruments(eq3: state_lon_z_* h_hub_*  state_gamma_*, noconstant) ///
-    from(	state_gamma_4 0.9 	state_gamma_5 0.9 	state_gamma_6 0.9 	state_gamma_9 0.9 	state_gamma_10 0.9 	state_gamma_12 0.9 		  	state_gamma_25 0.9 	 	state_gamma_27 0.9  	state_gamma_33 0.9 	state_gamma_34 0.9 	state_gamma_36 0.9 	state_gamma_41 0.9 	state_gamma_42 0.9 	state_gamma_48 0.9 	state_gamma_50 0.9  state_gamma_55 0.9 	state_delta_4 0.1 	state_delta_5 0.1 	state_delta_6 0.1 	state_delta_9 0.1 	state_delta_10 0.1 	state_delta_12 0.1 	 	state_delta_25 0.1 	state_delta_27 0.1 state_delta_33 0.1 	state_delta_34 0.1 	state_delta_36 0.1 	state_delta_41 0.1 	state_delta_42 0.1 	state_delta_48 0.1 	state_delta_50 0.1 	 state_delta_55 0.1)
-    
-	//save out 2, bootsrapped
-//estimates save "$sters/main_est_6_25_BS.ster", replace
-estimates use "$sters/main_est_6_25_BS.ster"
-estimates replay
-estat overid
-
-	
-
 
 /*
 $@#$%@$@#$%@$

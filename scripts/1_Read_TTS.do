@@ -834,6 +834,8 @@ sum moduleefficiency1 , d
 sum moduleefficiency1 [fweight = floor], d
 //closer to the mid-efficiency
 
+count if alt_gen_mid >15000 
+count if alt_gen_mid >50000 
 
 twoway (kdensity alt_gen_mid  if alt_gen_mid <= 40000) ( kdensity annual_generation  if alt_gen_mid <= 40000) , ///
 xtitle("Annual Generation, kWh") legend(order(1 "NREL API" 2 "Heuristic")) title("Kernel Density of Estimates for System-" "level Annual Generation")
