@@ -36,7 +36,9 @@ global processed "$root/_Data_postAER/Processed"
 
 
 /*
-Read in the 3 monthly EIA datasets
+!@#$!@#$!@#$!@#$!@#$!@#$!#@$!@#$!@
+Step 0. Read in the 3 monthly EIA datasets
+!@#$!@#$!@#$!@#$!@#$!@#$!#@$!@#$!@
 */
 
 //Fix solar
@@ -78,19 +80,8 @@ save "$temp/EIA_grid_consumption_monthly.dta",  replace
 
 /*
 !@#$!@#$!@#$!@#$!@#$!@#$!#@$!@#$!@
+Step 1. merge them to form panel state level  residential consumptionof "grid" and "solar" electricity
 !@#$!@#$!@#$!@#$!@#$!@#$!#@$!@#$!@
-!@#$!@#$!@#$!@#$!@#$!@#$!#@$!@#$!@
-!@#$!@#$!@#$!@#$!@#$!@#$!#@$!@#$!@
-!@#$!@#$!@#$!@#$!@#$!@#$!#@$!@#$!@
-
-merge them to form panel
-
-!@#$!@#$!@#$!@#$!@#$!@#$!#@$!@#$!@
-!@#$!@#$!@#$!@#$!@#$!@#$!#@$!@#$!@
-!@#$!@#$!@#$!@#$!@#$!@#$!#@$!@#$!@
-!@#$!@#$!@#$!@#$!@#$!@#$!#@$!@#$!@
-!@#$!@#$!@#$!@#$!@#$!@#$!#@$!@#$!@
-
 */
 
 use "$temp/EIA_grid_consumption_monthly.dta",  clear
@@ -107,10 +98,6 @@ label values state state_labels
 
 
 
-
-
-
-
 //generate monthly date
 gen month_date = mofd(Month)
 format month_date %tm
@@ -121,19 +108,10 @@ gen month_dummy = month(Month)
 drop Month
 
 
-sum year quarter month_dummy month_date
 
-//heat check
-xtset state month_date
-/*
-
-Panel variable: state (strongly balanced)
- Time variable: month_date, 2008m1 to 2022m10
-         Delta: 1 month
-
-*/
-
+//time set data
 duplicates r month_date state
+xtset state month_date
 
 /*
 
@@ -162,8 +140,11 @@ end of do-file
 
 
 
+
 /*
-//Merge in data on HDD CDD
+!@#$!@#$!@#$!@#$!@#$!@#$!#@$!@#$!@
+Step 3. Merge in monthly CDDs and HDDS from NOAA
+!@#$!@#$!@#$!@#$!@#$!@#$!#@$!@#$!@
 */
 merge 1:1 month_date state using "$temp/NOAA_DD_panel.dta",  gen(merge_hdd) 
 /*
@@ -267,27 +248,9 @@ tab state_string
 codebook state state_string
 //great
 
-//merge income
-merge m:1 year state_string  using "$processed/ACS_income_panel_states.dta",  gen(merge_income) 
-/*
-  Result                      Number of obs
-    -----------------------------------------
-    Not matched                         3,696
-        from master                     3,678  (merge_income==1)
-        from using                         18  (merge_income==2)
-
-    Matched                             5,400  (merge_income==3)
-    -----------------------------------------
-
-. drop merge_income
-*/
-
-drop if merge_income==2
-drop merge_income
-
 
 /*
-xtset
+re-time set 
 */
 xtset state month_date
 
@@ -303,7 +266,7 @@ sum grid_per_hh solar_per_hh  ratio
 
 
 /*
-stationarity or pre trends -- 
+tests for stationarity in the grid per HH outcome series
 */
 
 matrix stationary_dummies = [.]
@@ -363,126 +326,31 @@ sum stationary_FD
 total stationary_FD
 
 
-
-
-xtset state month_date
-
-//baseline
-reg  grid_per_hh solar_per_hh , r
-reg  grid_per_hh solar_per_hh [aw = customers], r
-
-//bl with controls
-reg  grid_per_hh solar_per_hh CDDs HDDs , r
-reg  grid_per_hh solar_per_hh  CDDs HDDs [aw = customers], r
-
-//bl with controls and incoem
-reg  grid_per_hh solar_per_hh CDDs HDDs mean_hh_income , r
-reg  grid_per_hh solar_per_hh  CDDs HDDs mean_hh_income [aw = customers], r
-
-//month dummies
-reg  grid_per_hh solar_per_hh  CDDs HDDs i.month_date , r
-reg  grid_per_hh solar_per_hh  CDDs HDDs i.month_date [aw = customers], r
-
-
-//FE 
-areg grid_per_hh solar_per_hh  CDDs HDDs, absorb(state) vce(robust)
-areg grid_per_hh solar_per_hh  CDDs HDDs [aw = customers], absorb(state) vce(robust)
-
-//TWFE
-//clement tests...
-//first assumes parallel trends, constant effect over time
-//twowayfeweights grid_per_hh state month_date solar_per_hh, type(feS) controls( CDDs HDDs)
 /*
-Under the common trends, treatment monotonicity, and if groups' treatment effect does not change over time,
-beta estimates a weighted sum of 5134 LATEs. 
-
-2377 LATEs receive a positive weight, and 2757 receive a negative weight.
-The sum of the positive weights is equal to 3.4452689.
-The sum of the negative weights is equal to -2.4452689.
-
-beta is compatible with a DGP where the average of those LATEs is equal to 0,
-while their standard deviation is equal to .20436585.
-
-beta is compatible with a DGP where those LATEs all are of a different sign than beta,
-while their standard deviation is equal to .25793865.
-
-
-
+and first differences.
 */
-
-//second less restrictive
-//twowayfeweights grid_per_hh state month_date solar_per_hh, type(feTR) controls( CDDs HDDs)
-/*
-
-. twowayfeweights grid_per_hh state month_date solar_per_hh, type(feTR) controls( CDDs HDDs)
-Under the common trends assumption, beta estimates a weighted sum of 5194 ATTs. 
-2566 ATTs receive a positive weight, and 2628 receive a negative weight.
-The sum of the positive weights is equal to 1.634016.
-The sum of the negative weights is equal to -.63401604.
-beta is compatible with a DGP where the average of those ATTs is equal to 0,
-while their standard deviation is equal to .55909566.
-beta is compatible with a DGP where those ATTs all are of a different sign than beta,
-while their standard deviation is equal to .93512785.
-
-*/
-
-
-//Various TWFE
-areg grid_per_hh solar_per_hh CDDs HDDs i.month_date, absorb(state) vce(robust)
-areg grid_per_hh solar_per_hh  CDDs HDDs i.month_date [aw = customers], absorb(state) vce(robust)
-
-
-areg grid_per_hh solar_per_hh CDDs HDDs mean_hh_income i.month_date, absorb(state) vce(robust)
-areg grid_per_hh solar_per_hh  CDDs HDDs mean_hh_income i.month_date [aw = customers], absorb(state) vce(robust)
-
-
-
-
-
-areg grid_per_hh solar_per_hh CDDs HDDs i.month_dummy, absorb(state) vce(robust)
-areg grid_per_hh solar_per_hh CDDs HDDs i.month_dummy [aw = customers], absorb(state) vce(robust)
-
-
-areg grid_per_hh solar_per_hh CDDs HDDs i.quarter, absorb(state) vce(robust)
-areg grid_per_hh solar_per_hh CDDs HDDs i.quarter [aw = customers], absorb(state) vce(robust)
-
-areg grid_per_hh solar_per_hh CDDs HDDs i.year, absorb(state) vce(robust)
-areg grid_per_hh solar_per_hh CDDs HDDs i.year [aw = customers], absorb(state) vce(robust)
-
-
-
-
-
-//twfe trends
-reg grid_per_hh solar_per_hh CDDs HDDs i.month_date i.state##c.month_date, vce(robust)
-reg grid_per_hh solar_per_hh CDDs HDDs i.month_date  i.state##c.month_date [aw = customers],  vce(robust)
-
-//twfe quad
-gen time2 = month_date^2
-reghdfe  grid_per_hh solar_per_hh  CDDs HDDs,  vce(robust) absorb(i.state##c.month_date i.month_date )
-reghdfe  grid_per_hh solar_per_hh CDDs HDDs  [aw = customers],  vce(robust) absorb(i.state##c.month_date i.month_date )
-reghdfe  grid_per_hh solar_per_hh  CDDs HDDs [aw = customers],  vce(robust) absorb(i.state##c.month_date i.state#c.time2 i.month_date )
-
-
-
-
-
-//First differences
-reg  d.grid_per_hh d.solar_per_hh [aw = customers], r
-reg  d.grid_per_hh d.solar_per_hh   i.month_date [aw = customers], r
-areg  d.grid_per_hh d.solar_per_hh   i.month_date [aw = customers], absorb(state) vce(robust)
-
 
 
 
 /*
-cumulative kw instrument
+Construct Instrument from the EIA form 63B, linked here:
+
+https://www.eia.gov/renewable/monthly/solar_photo/
 
 
-see here -- https://www.eia.gov/renewable/monthly/solar_photo/pdf/renewable.pdf
+We use the cumulative level of shipments (in kWh) constructed from Table 3 of the the document below.
+
+https://www.eia.gov/renewable/monthly/solar_photo/pdf/renewable.pdf
+
+along with an alternative measure that is the umulative value of shipments on a dollar basis.
+
+Noting that the level in 2021 was revised since we first constructed our data series.
 */
 
 
+/*
+Main Instrument
+*/
 gen cumkw=.
 replace cumkw=320208 if year ==2006
 replace cumkw=814356 if year ==2007
@@ -503,6 +371,7 @@ replace cumkw=130572771 if year ==2021
 replace cumkw=147900440 if year ==2022
 
 
+//Tests of first stage
 reg solar_per_hh cumkw [aw = customers], r
 reg solar_per_hh L.cumkw [aw = customers], r
 reg solar_per_hh L.cumkw i.state i.month_dummy [aw = customers], r
@@ -698,31 +567,10 @@ test (solar_per_hh  = -1)
 //$@#%#$@%$#@%$#@%$%@#$%@#$%
 //(4')
 // //alterantive instrument
-// ivregress 2sls grid_per_hh HDDs CDDs i.state i.month_dummy  (solar_per_hh= L.cum_shipments)  [aw = customers], vce(robust)
-// display e(b)[1,1]
-// test (solar_per_hh  = -1)
-// outreg using "$processed/passthrough_IV.tex", se bdec(3 3) nostars merge  tex  ctitle("", "(cum $s)") keep(solar_per_hh HDDs CDDs)
-//
-// /*
-//
-//
-// . display e(b)[1,1]
-// -.89859885
-//
-// . test (solar_per_hh  = -1)
-//
-//  ( 1)  solar_per_hh = -1
-//
-//            chi2(  1) =    0.14
-//          Prob > chi2 =    0.7066
-//
-// . 
-// end of do-file
-//
-// . 
-//
-// */
-
+ivregress 2sls grid_per_hh HDDs CDDs i.state i.month_dummy  (solar_per_hh= L.cum_shipments)  [aw = customers], vce(robust)
+display e(b)[1,1]
+test (solar_per_hh  = -1)
+//outreg using "$processed/passthrough_IV.tex", se bdec(3 3) nostars merge  tex  ctitle("", "(cum $s)") keep(solar_per_hh HDDs CDDs)
 
  //$@#%#$@%$#@%$#@%$%@#$%@#$%
 //(4)
@@ -789,47 +637,6 @@ display e(b)[1,1]
 ivregress 2sls grid_per_hh HDDs CDDs i.state i.month_dummy  (solar_per_hh= L.cumkw)  , vce(robust) 
 display e(b)[1,1]
 //-.62328254
-
-
-
-//UPDATE 6/27/223 -- with gas
-//$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$
-
-/*
-
-//$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%
-//$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%
-
-
-gen lagged_instrument_cumulative = L.cumkw * LON
-//(1)
-ivregress 2sls grid_per_hh gas_per_customer (solar_per_hh= lagged_instrument_cumulative) [aw = customers] if state_string!="Hawaii" & state_string!="Alaska", vce(robust)
-display e(b)[1,1]
-//-1.3795585
-
-outreg using "$processed/passthrough_IV.tex", se bdec(3 3) nostars replace tex ctitle("","(1)")  title("Decomposition of Solar Panel Area per Household") keep(solar_per_hh gas_per_customer HDDs CDDs)
-
-//(2)
-ivregress 2sls grid_per_hh gas_per_customer HDDs CDDs (solar_per_hh= lagged_instrument_cumulative) [aw = customers] if state_string!="Hawaii" & state_string!="Alaska", vce(robust)
-display e(b)[1,1]
-//-.67878354
-outreg using "$processed/passthrough_IV.tex", se bdec(3 3) nostars merge  tex  ctitle("", "(State FEs)") keep(solar_per_hh gas_per_customer HDDs CDDs)
-
-
-//(3 - TWFE, preferred)
-ivregress 2sls grid_per_hh gas_per_customer HDDs CDDs i.state i.month_dummy (solar_per_hh= lagged_instrument_cumulative)  [aw = customers] if state_string!="Hawaii" & state_string!="Alaska" , vce(robust)
-display e(b)[1,1]
-//-.45630222
-outreg using "$processed/passthrough_IV.tex", se bdec(3 3) nostars merge  tex  ctitle("", "(TWFEs)") keep(solar_per_hh gas_per_customer HDDs CDDs)
-
-
-
-
-
-
-//$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%
-//$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%
-//$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@%$%#$@
 
 
 
