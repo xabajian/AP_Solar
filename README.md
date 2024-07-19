@@ -85,7 +85,7 @@ Files in this section essentially read in all raw data we use in various portion
 
 ## Section 2 
 
-`2_GMM_estimation.do`: Performs the estimation procedure described in section 4 of the main text. This includes constructing the relevant time series for both instruments (solar module import prices and Henry hub natural gas contracts) as well as interacting them with county-level longitudes. The script then estimates the model using Stata’s GMM routine and then repeats this for bootstrapping the standard errors.s
+`2_GMM_estimation.do`: Performs the estimation procedure described in section 4 of the main text. This includes constructing the relevant time series for both instruments (solar module import prices and Henry hub natural gas contracts) as well as interacting them with county-level longitudes. The script then estimates the model using Stata’s GMM routine and then repeats this for bootstrapping the standard errors. It takes about 10 minutes to run the estimator with asymptotic standard errors and overnight to run the bootstrapped version on a 2021 macbook pro.
 
 ## Section 3 
 
