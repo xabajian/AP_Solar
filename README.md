@@ -120,7 +120,7 @@ Files in this section essentially read in all raw data we use in various portion
 
 # Data Description for the Data Repo
 
-There are four folders: raw, processed,.sters, and temp. Contents are pretty much self explanatory and 
+There are four folders: raw, processed,.sters, and temp. The contents of each correspond (roughly) to what one would assume to be covered under each folder name. 
 
 ## Raw
 
