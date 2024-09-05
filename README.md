@@ -1,6 +1,6 @@
 # Abajian and Pretnar 2024
 
-Read me file accompanying the scripts required to replicate findings in the main text and appendix “Subsidies for Close Substitutes: Aggregate Demand for Residential Solar Electricity”
+Read me file accompanying the scripts required to replicate findings in the main text and appendix “Subsidies for Close Substitutes: Aggregate Demand for Residential Solar Electricity” [https://www.sciencedirect.com/science/article/pii/S0014292124001776]
 
 Questions concerning running the code here or with replicating analysis performed in the peer review process should be directed to xander.abajian@gmail.com.
 
